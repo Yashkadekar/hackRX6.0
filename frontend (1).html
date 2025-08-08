@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Insurance Assistant Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        :root {
+            --background-light: #f7fafc;
+            --text-light: #1f2937;
+            --card-bg-light: #ffffff;
+            --border-light: #e5e7eb;
+
+            --background-dark: #1f2937;
+            --text-dark: #f3f4f6;
+            --card-bg-dark: #374151;
+            --border-dark: #4b5563;
+        }
+        body { font-family: 'Poppins', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        /* --- Theme Styles --- */
+        html.light body { background-color: var(--background-light); color: var(--text-light);}
+        html.light .card { background-color: var(--card-bg-light);}
+        html.light .themed-border { border-color: var(--border-light);}
+        html.light .themed-text { color: var(--text-light);}
+        html.light .themed-text-secondary { color: #4b5563;}
+        html.light .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6;}
+        html.dark body { background-color: var(--background-dark); color: var(--text-dark);}
+        html.dark .card { background-color: var(--card-bg-dark);}
+        html.dark .themed-border { border-color: var(--border-dark);}
+        html.dark .themed-text { color: var(--text-dark);}
+        html.dark .themed-text-secondary { color: #d1d5db;}
+        html.dark .tab-active { border-bottom: 3px solid #60a5fa; color: #60a5fa;}
+        html.dark .hero-gradient { background: linear-gradient(135deg, #111827 0%, #1f2937 100%);}
+        html.dark input, html.dark select, html.dark textarea { background-color: #4b5563; color: var(--text-dark); border-color: #6b7280;}
+        html.dark input::placeholder, html.dark textarea::placeholder { color: #9ca3af;}
+        .hero-gradient { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);}
+        .input-focus:focus { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);}
+        @keyframes spin { 0% { transform: rotate(0deg);} 100% {transform: rotate(360deg);}}
+        .animate-spin { animation: spin 1.5s linear infinite;}
+        /* --- Component Styles --- */
+        .chat-bubble-user { background-color: #dbeafe; color: #1e40af;}
+        html.dark .chat-bubble-user { background-color: #1e40af; color: #dbeafe;}
+        .chat-bubble-ai { background-color: #e5e7eb;}
+        html.dark .chat-bubble-ai { background-color: #4b5563;}
+        .jargon { color: #2563eb; text-decoration: underline; cursor: pointer; font-weight: 500;}
+        html.dark .jargon { color: #60a5fa;}
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 100;
+        }
+        .typing-cursor {
+            display: inline-block;
+            width: 8px; height: 8px;
+            background-color: currentColor;
+            border-radius: 50%;
+            animation: typing-blink 1s steps(4, start) infinite;
+            margin: 0 2px;
+        }
+        @keyframes typing-blink {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        .typing-indicator .typing-cursor:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator .typing-cursor:nth-child(3) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex flex-col">
+        <header class="hero-gradient text-white py-4 shadow-lg sticky top-0 z-50">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/9a63029e-49cd-4ce6-afb3-2531ed4bb6c3.png" alt="HealthInsure AI Logo" class="w-12 h-12 rounded-full border-2 border-white/50">
+                        <h1 class="text-2xl font-bold tracking-wide" data-lang-key="title">HealthInsure AI</h1>
+                    </div>
+                    <div class="flex items-center space-x-2 sm:space-x-4">
+                        <select id="language-switcher" class="bg-white/20 text-white text-sm rounded-md p-2 border-0 focus:ring-2 focus:ring-white">
+                            <option value="en">English</option>
+                            <option value="hi">हिन्दी</option>
+                        </select>
+                        <button id="theme-toggle" class="text-xl sm:text-2xl p-2" aria-label="Toggle light/dark mode"><i class="fas fa-moon"></i></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <main class="flex-grow container mx-auto px-4 py-8">
+            <div class="max-w-6xl mx-auto">
+                <div class="flex border-b themed-border mb-8 overflow-x-auto">
+                    <button class="tab-button px-4 py-3 sm:px-6 font-medium themed-text-secondary hover:text-blue-600 transition-all tab-active whitespace-nowrap" data-tab="query" role="tab"><i class="fas fa-comment-dots mr-2"></i><span data-lang-key="tab_ask">Ask</span></button>
+                    <button class="tab-button px-4 py-3 sm:px-6 font-medium themed-text-secondary hover:text-blue-600 transition-all whitespace-nowrap" data-tab="document" role="tab"><i class="fas fa-robot mr-2"></i><span data-lang-key="tab_doc_ai">Document AI</span></button>
+                    <button class="tab-button px-4 py-3 sm:px-6 font-medium themed-text-secondary hover:text-blue-600 transition-all whitespace-nowrap" data-tab="claim" role="tab"><i class="fas fa-file-invoice-dollar mr-2"></i><span data-lang-key="tab_claim">Claim</span></button>
+                    <button class="tab-button px-4 py-3 sm:px-6 font-medium themed-text-secondary hover:text-blue-600 transition-all whitespace-nowrap" data-tab="recommend" role="tab"><i class="fas fa-heartbeat mr-2"></i><span data-lang-key="tab_recommend">Recommend</span></button>
+                    <button class="tab-button px-4 py-3 sm:px-6 font-medium themed-text-secondary hover:text-blue-600 transition-all whitespace-nowrap" data-tab="hospitals" role="tab"><i class="fas fa-hospital mr-2"></i><span data-lang-key="tab_hospitals">Hospitals</span></button>
+                   
+                </div>
+                <div class="tab-content">
+                    <div id="query-tab" class="tab-panel active" role="tabpanel">
+                        <div class="card themed-text rounded-lg shadow-md">
+                            <div id="chat-history" class="p-6 h-96 overflow-y-auto space-y-4"></div>
+                            <div class="p-4 border-t themed-border">
+                                <div class="flex items-center space-x-2 sm:space-x-4">
+                                    <input type="text" id="user-question" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" placeholder="Ask about your policy or a scenario..." required>
+                                    <button id="voice-input-btn" class="p-3 text-gray-500 hover:text-blue-600"><i class="fas fa-microphone"></i></button>
+                                    <button id="submit-question" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 sm:px-6 rounded-lg transition-all flex items-center justify-center" aria-label="Submit question">
+                                        <span data-lang-key="button_send">Send</span>
+                                    </button>
+                                    <button id="clear-chat" class="bg-gray-200 hover:bg-gray-300 text-gray-800 p-3 rounded-lg" aria-label="Clear chat history">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="document-tab" class="tab-panel hidden" role="tabpanel">
+                        <div class="card themed-text rounded-lg shadow-md p-6 mb-8">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4 dark:text-white" data-lang-key="doc_upload_title">1. Upload & Process Documents</h3>
+                            <div class="space-y-6">
+                                <div id="dropzone" class="border-2 border-dashed themed-border rounded-lg p-8 text-center">
+                                    <div class="flex justify-center mb-4">
+                                        <i class="fas fa-file-pdf text-4xl text-red-500"></i>
+                                    </div>
+                                    <p class="themed-text-secondary mb-4" data-lang-key="doc_drag_drop">Drag and drop your policy document here</p>
+                                    <input type="file" id="policy-upload" accept=".pdf" class="hidden">
+                                    <label for="policy-upload" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg cursor-pointer" data-lang-key="button_select_files">
+                                        Select File
+                                    </label>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium themed-text mb-2" data-lang-key="doc_uploaded_docs">Uploaded Document</h4>
+                                    <div id="uploaded-files" class="space-y-3">
+                                        <div class="text-center py-4 themed-text-secondary" id="no-documents" data-lang-key="doc_no_docs">
+                                            No document uploaded yet
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex space-x-4">
+                                    <button id="process-docs" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50" disabled>
+                                        <i id="doc-process-spinner" class="fas fa-spinner animate-spin mr-2 hidden"></i>
+                                        <span data-lang-key="button_process_docs">Process Document</span>
+                                    </button>
+                                    <button id="clear-docs" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg" data-lang-key="button_clear_all">
+                                        Clear All
+                                    </button>
+                                </div>
+                                <div id="processing-result" class="hidden">
+                                    <div class="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 p-4 rounded">
+                                        <div class="flex">
+                                            <div class="flex-shrink-0">
+                                                <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                            </div>
+                                            <div class="ml-3">
+                                                <h4 class="text-sm font-medium text-green-700 dark:text-green-300" data-lang-key="doc_processed_title">Document Processed</h4>
+                                                <div id="result-preview" class="mt-4 text-sm themed-text"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card themed-text rounded-lg shadow-md">
+                            <h3 class="text-2xl font-semibold text-gray-800 p-6 pb-0 dark:text-white" data-lang-key="doc_ask_title">2. Ask About Your Document</h3>
+                            <div id="doc-chat-history" class="p-6 h-96 overflow-y-auto space-y-4"></div>
+                            <div class="p-4 border-t themed-border">
+                                <div class="flex items-center space-x-4">
+                                    <input type="text" id="doc-user-question" class="w-full px-4 py-3 border themed-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ask about the processed document..." required disabled>
+                                    <button id="doc-submit-question" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg disabled:opacity-50" disabled>
+                                        <span data-lang-key="button_send">Send</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="claim-tab" class="tab-panel hidden" role="tabpanel">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div class="card themed-text rounded-lg shadow-md p-6">
+                                <h3 class="text-2xl font-semibold mb-4" data-lang-key="claim_title">Claim Assistance</h3>
+                                <p class="themed-text-secondary mb-4 text-sm">For accurate analysis, please upload your policy document in the 'Document AI' tab first.</p>
+                                <div class="space-y-6">
+                                    <div>
+                                        <label for="claim-type" class="block text-sm font-medium mb-2" data-lang-key="claim_type">Type of Claim</label>
+                                        <select id="claim-type" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" required></select>
+                                    </div>
+                                    <div id="claim-docs-upload-section">
+                                        <label class="block text-sm font-medium mb-2" data-lang-key="claim_upload_bills">Upload Bill/Report (Optional)</label>
+                                        <div id="claim-dropzone" class="border-2 border-dashed themed-border rounded-lg p-6 text-center cursor-pointer">
+                                            <p class="themed-text-secondary" data-lang-key="claim_drag_drop">Drag and drop file here</p>
+                                            <input type="file" id="claim-upload" accept=".jpg,.jpeg,.pdf" class="hidden">
+                                        </div>
+                                        <div id="claim-files-list" class="mt-3 space-y-2"></div>
+                                    </div>
+                                    <button id="check-claim" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg w-full">
+                                        <i id="claim-spinner" class="fas fa-spinner animate-spin mr-2 hidden"></i>
+                                        <span data-lang-key="button_check_claim">Check Claim Eligibility</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="claim-result-container" class="hidden">
+                                <div class="card themed-text rounded-lg shadow-md p-6">
+                                    <h3 class="text-2xl font-semibold mb-4" data-lang-key="claim_result_title">Claim Analysis Result</h3>
+                                    <div id="claim-status" class="p-4 rounded-lg text-center font-bold text-lg mb-4"></div>
+                                    <p id="claim-reason" class="themed-text-secondary text-sm mb-4"></p>
+                                    <div id="missing-docs-validator">
+                                        <h4 class="font-semibold mb-2" data-lang-key="validator_title">Document Checklist</h4>
+                                        <ul id="validator-list" class="space-y-2 text-sm"></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="recommend-tab" class="tab-panel hidden" role="tabpanel">
+                        <div class="card themed-text rounded-lg shadow-md p-6 mb-8">
+                            <h3 class="text-2xl font-semibold mb-4" data-lang-key="recommend_title">Get Personalized Recommendations</h3>
+                            <div class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="user-age" class="block text-sm font-medium mb-2" data-lang-key="recommend_age">Age</label>
+                                        <input type="number" id="user-age" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" placeholder="e.g., 35" required>
+                                    </div>
+                                    <div>
+                                        <label for="user-gender" class="block text-sm font-medium mb-2" data-lang-key="recommend_gender">Gender</label>
+                                        <select id="user-gender" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" required>
+                                            <option value="">Select Gender</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="health-conditions" class="block text-sm font-medium mb-2" data-lang-key="recommend_health">Health Conditions (comma-separated)</label>
+                                    <input type="text" id="health-conditions" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" placeholder="e.g., Diabetes, Hypertension">
+                                </div>
+                                <div>
+                                    <label for="desired-coverage" class="block text-sm font-medium mb-2" data-lang-key="recommend_coverage">Desired Coverage (e.g., ₹5 lakhs, critical illness, maternity)</label>
+                                    <input type="text" id="desired-coverage" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" placeholder="e.g., ₹5 lakhs, Critical Illness">
+                                </div>
+                                <div>
+                                    <label for="user-budget" class="block text-sm font-medium mb-2" data-lang-key="recommend_budget">Budget (₹ / year)</label>
+                                    <input type="number" id="user-budget" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" placeholder="e.g., 15000" required>
+                                </div>
+                                <button id="get-recommendations" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg w-full sm:w-auto">
+                                    <i id="recommend-spinner" class="fas fa-spinner animate-spin mr-2 hidden"></i>
+                                    <span data-lang-key="button_get_recommendations">Find Policies</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="recommendations-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+                    </div>
+                    <div id="hospitals-tab" class="tab-panel hidden" role="tabpanel">
+                        <div class="card themed-text rounded-lg shadow-md p-6">
+                            <h3 class="text-2xl font-semibold mb-4" data-lang-key="hospitals_title">Cashless Hospital Finder</h3>
+                            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                                <input type="text" id="hospital-location" class="w-full px-4 py-3 border themed-border rounded-lg input-focus" placeholder="Enter city or pin code...">
+                                <button id="find-hospitals" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg">
+                                    <i id="hospital-spinner" class="fas fa-spinner animate-spin mr-2 hidden"></i>
+                                    <i class="fas fa-search mr-2"></i><span data-lang-key="button_find">Find</span>
+                                </button>
+                            </div>
+                            <div id="hospital-list" class="mt-6 space-y-4"></div>
+                        </div>
+                    </div>
+                    
+    <div id="jargon-modal" class="modal-overlay hidden">
+        <div class="card themed-text rounded-lg shadow-xl p-6 w-11/12 md:w-1/2 max-w-lg relative">
+            <h3 id="jargon-term" class="text-2xl font-bold mb-4"></h3>
+            <p id="jargon-definition" class="themed-text-secondary"></p>
+            <button id="jargon-modal-close" class="absolute top-4 right-4 text-2xl">&times;</button>
+        </div>
+    </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Cache all necessary DOM elements for efficient access
+        const elements = {
+            html: document.documentElement,
+            themeToggle: document.getElementById('theme-toggle'),
+            languageSwitcher: document.getElementById('language-switcher'),
+            tabs: document.querySelectorAll('.tab-button'),
+            chatHistory: document.getElementById('chat-history'),
+            submitQuestionBtn: document.getElementById('submit-question'),
+            userQuestionInput: document.getElementById('user-question'),
+            voiceInputBtn: document.getElementById('voice-input-btn'),
+            clearChatBtn: document.getElementById('clear-chat'),
+            docChatHistory: document.getElementById('doc-chat-history'),
+            docSubmitBtn: document.getElementById('doc-submit-question'),
+            docUserInput: document.getElementById('doc-user-question'),
+            dropzone: document.getElementById('dropzone'),
+            policyUploadInput: document.getElementById('policy-upload'),
+            uploadedFilesDiv: document.getElementById('uploaded-files'),
+            noDocumentsText: document.getElementById('no-documents'),
+            processDocsBtn: document.getElementById('process-docs'),
+            docProcessSpinner: document.getElementById('doc-process-spinner'),
+            clearDocsBtn: document.getElementById('clear-docs'),
+            processingResult: document.getElementById('processing-result'),
+            resultPreview: document.getElementById('result-preview'),
+            claimType: document.getElementById('claim-type'),
+            checkClaimBtn: document.getElementById('check-claim'),
+            claimResultContainer: document.getElementById('claim-result-container'),
+            claimStatus: document.getElementById('claim-status'),
+            claimReason: document.getElementById('claim-reason'),
+            validatorList: document.getElementById('validator-list'),
+            claimDropzone: document.getElementById('claim-dropzone'),
+            claimUploadInput: document.getElementById('claim-upload'),
+            claimFilesList: document.getElementById('claim-files-list'),
+            claimSpinner: document.getElementById('claim-spinner'),
+            userAge: document.getElementById('user-age'),
+            userGender: document.getElementById('user-gender'),
+            healthConditions: document.getElementById('health-conditions'),
+            desiredCoverage: document.getElementById('desired-coverage'),
+            userBudget: document.getElementById('user-budget'),
+            getRecommendationsBtn: document.getElementById('get-recommendations'),
+            recommendationsContainer: document.getElementById('recommendations-container'),
+            recommendSpinner: document.getElementById('recommend-spinner'),
+            findHospitalsBtn: document.getElementById('find-hospitals'),
+            hospitalLocationInput: document.getElementById('hospital-location'),
+            hospitalList: document.getElementById('hospital-list'),
+            hospitalSpinner: document.getElementById('hospital-spinner'),
+            jargonModal: document.getElementById('jargon-modal'),
+            jargonTerm: document.getElementById('jargon-term'),
+            jargonDefinition: document.getElementById('jargon-definition'),
+            jargonModalClose: document.getElementById('jargon-modal-close'),
+            analyticsContent: document.getElementById('analytics-content'),
+            analyticsLoader: document.getElementById('analytics-loader'),
+            analyticsTotalClaims: document.getElementById('analytics-total-claims'),
+            analyticsApprovalRate: document.getElementById('analytics-approval-rate'),
+            analyticsAvgAmount: document.getElementById('analytics-avg-amount'),
+        };
+
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        // --- State Management ---
+        let appState = {
+            generalChatHistory: [],
+            docChatHistory: [],
+            uploadedPolicyFile: null,
+            policyDocumentText: null, // Holds the extracted text from the PDF
+            claimFile: null,
+            analyticsCharts: {},
+            analyticsInitialized: false
+        };
+
+        const translations = {
+            en: {
+                title: "HealthInsure AI",
+                tab_ask: "Ask", tab_doc_ai: "Document AI", tab_claim: "Claim", tab_recommend: "Recommend", tab_hospitals: "Hospitals", tab_analytics: "Analytics",
+                chat_start: "Ask a question or describe a scenario to begin.",
+                doc_chat_start: "After processing a document, you can ask questions about it here.",
+                button_send: "Send", button_select_files: "Select File", button_process_docs: "Process Document", button_clear_all: "Clear All", button_check_claim: "Check Claim Eligibility",
+                doc_upload_title: "1. Upload & Process Documents", doc_drag_drop: "Drag and drop your policy document here", doc_uploaded_docs: "Uploaded Document", doc_no_docs: "No document uploaded yet", doc_processed_title: "Document Processed", doc_ask_title: "2. Ask About Your Document",
+                claim_title: "Claim Assistance", claim_type: "Type of Claim", claim_upload_bills: "Upload Bill/Report (Optional)", claim_drag_drop: "Drag and drop file here", claim_result_title: "Claim Analysis Result", validator_title: "Document Checklist",
+                recommend_title: "Get Personalized Recommendations", recommend_age: "Age", recommend_gender: "Gender", recommend_health: "Health Conditions (comma-separated)", recommend_coverage: "Desired Coverage", recommend_budget: "Budget (₹ / year)", button_get_recommendations: "Find Policies",
+                hospitals_title: "Cashless Hospital Finder", button_find: "Find",
+                analytics_title: "Policy & Claim Analytics", analytics_claims_status: "Claim Status Distribution", analytics_key_metrics: "Key Metrics", analytics_total_claims: "Total Claims", analytics_approval_rate: "Approval Rate", analytics_avg_amount: "Average Claim Amount", analytics_monthly_claims: "Monthly Claim Submissions",
+                claim_types: { hospitalization: "Hospitalization", opd: "Outpatient (OPD)", maternity: "Maternity", critical_illness: "Critical Illness" },
+                jargon: { deductible: "A deductible is the amount you pay for health care services before your health insurance begins to pay.", copayment: "A copayment is a fixed amount you pay for a covered health care service after you've paid your deductible.", coinsurance: "Coinsurance is your share of the costs of a health care service. It's usually a percentage of the total cost.", "pre-existing disease": "A health problem, like asthma or diabetes, that you had before the date that your new health coverage starts.", "waiting period": "A period of time you must wait before some or all of your health coverage begins." },
+                recommend_policy_no_results: "No policies found matching your criteria.", hospital_no_results: "No cashless hospitals found for \"{location}\"."
+            },
+            hi: {
+                title: "हेल्थइंश्योर एआई",
+                tab_ask: "पूछें", tab_doc_ai: "दस्तावेज़ एआई", tab_claim: "दावा", tab_recommend: "सिफारिश", tab_hospitals: "अस्पताल", tab_analytics: "विश्लेषण",
+                chat_start: "शुरू करने के लिए कोई प्रश्न पूछें या परिदृश्य का वर्णन करें।",
+                doc_chat_start: "दस्तावेज़ को संसाधित करने के बाद, आप उसके बारे में यहां प्रश्न पूछ सकते हैं।",
+                button_send: "भेजें", button_select_files: "फ़ाइल चुनें", button_process_docs: "दस्तावेज़ प्रोसेस करें", button_clear_all: "सब साफ़ करें", button_check_claim: "दावा पात्रता जांचें",
+                doc_upload_title: "१. दस्तावेज़ अपलोड और प्रोसेस करें", doc_drag_drop: "अपना पॉलिसी दस्तावेज़ यहां खींचें और छोड़ें", doc_uploaded_docs: "अपलोड किया गया दस्तावेज़", doc_no_docs: "अभी तक कोई दस्तावेज़ अपलोड नहीं किया गया", doc_processed_title: "दस्तावेज़ संसाधित", doc_ask_title: "२. अपने दस्तावेज़ के बारे में पूछें",
+                claim_title: "दावा सहायता", claim_type: "दावे का प्रकार", claim_upload_bills: "बिल/रिपोर्ट अपलोड करें (वैकल्पिक)", claim_drag_drop: "फ़ाइलें यहाँ खींचें और छोड़ें", claim_result_title: "दावा विश्लेषण परिणाम", validator_title: "दस्तावेज़ चेकलिस्ट",
+                recommend_title: "व्यक्तिगत सिफारिशें प्राप्त करें", recommend_age: "आयु", recommend_gender: "लिंग", recommend_health: "स्वास्थ्य स्थितियाँ (कॉमा से अलग)", recommend_coverage: "वांछित कवरेज", recommend_budget: "बजट (₹ / वर्ष)", button_get_recommendations: "पॉलिसी खोजें",
+                hospitals_title: "कैशलेस अस्पताल खोजक", button_find: "खोजें",
+                analytics_title: "पॉलिसी और दावा विश्लेषण", analytics_claims_status: "दावा स्थिति वितरण", analytics_key_metrics: "मुख्य मीट्रिक्स", analytics_total_claims: "कुल दावे", analytics_approval_rate: "स्वीकृति दर", analytics_avg_amount: "औसत दावा राशि", analytics_monthly_claims: "मासिक दावा सबमिशन",
+                claim_types: { hospitalization: "अस्पताल में भर्ती", opd: "बाह्य रोगी (ओपीडी)", maternity: "मातृत्व", critical_illness: "गंभीर बीमारी" },
+                jargon: { deductible: "डिडक्टिबल वह राशि है जो आप स्वास्थ्य देखभाल सेवाओं के लिए भुगतान करते हैं, इससे पहले कि आपका स्वास्थ्य बीमा भुगतान करना शुरू करे।", copayment: "कोपयमेंट एक निश्चित राशि है जो आप अपनी डिडक्टिबल का भुगतान करने के बाद कवर की गई स्वास्थ्य देखभाल सेवा के लिए भुगतान करते हैं।", coinsurance: "कोइन्श्योरेंस स्वास्थ्य देखभाल सेवा की लागत में आपकी हिस्सेदारी है। यह आमतौर पर कुल लागत का एक प्रतिशत होता है।", "pre-existing disease": "एक स्वास्थ्य समस्या, जैसे अस्थमा या मधुमेह, जो आपके नए स्वास्थ्य कवरेज शुरू होने की तारीख से पहले थी।", "waiting period": "एक अवधि जिसका आपको इंतजार करना होगा इससे पहले कि आपका कुछ या सभी स्वास्थ्य कवरेज शुरू हो।" },
+                recommend_policy_no_results: "आपके मानदंड से मेल खाने वाली कोई पॉलिसी नहीं मिली।", hospital_no_results: "\"{location}\" के लिए कोई कैशलेस अस्पताल नहीं मिला।"
+            }
+        };
+        
+        const showToast = (message, type = 'success') => Toastify({ text: message, duration: 3000, gravity: "top", position: "right", style: { background: type === 'success' ? '#10B981' : '#EF4444' } }).showToast();
+        const updateLanguage = (lang) => { document.querySelectorAll('[data-lang-key]').forEach(el => { const key = el.getAttribute('data-lang-key'); if (translations[lang] && translations[lang][key]) { el.textContent = translations[lang][key]; } }); populateSelect(elements.claimType, translations[lang].claim_types); };
+        const populateSelect = (select, options) => { if(!select) return; const currentVal = select.value; select.innerHTML = `<option value="">Select...</option>`; for (const [value, text] of Object.entries(options)) { select.innerHTML += `<option value="${value}">${text}</option>`; } select.value = currentVal; };
+        const applyTheme = (theme) => { elements.html.classList.remove('light', 'dark'); elements.html.classList.add(theme); elements.themeToggle.innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>'; localStorage.setItem('theme', theme); if (appState.analyticsInitialized) { updateChartColors(theme); }};
+        
+        const highlightJargon = (text) => {
+            const lang = localStorage.getItem('language') || 'en';
+            const jargonTerms = Object.keys(translations[lang].jargon);
+            const regex = new RegExp(`\\b(${jargonTerms.join('|')})\\b`, 'gi');
+            return text.replace(regex, (match) => `<span class="jargon" data-term="${match.toLowerCase()}">${match}</span>`);
+        };
+
+        const renderChat = (history, targetElement, initialMessageKey) => {
+            const lang = localStorage.getItem('language') || 'en';
+            if (history.length === 0) {
+                targetElement.innerHTML = `<div class="text-center themed-text-secondary" data-lang-key="${initialMessageKey}">${translations[lang][initialMessageKey]}</div>`;
+            } else {
+                targetElement.innerHTML = history.map(msg =>
+                    `<div class="chat-bubble ${msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai'} p-3 rounded-lg max-w-lg ${msg.role === 'user' ? 'ml-auto' : 'mr-auto'}">${highlightJargon(msg.content)}</div>`
+                ).join('');
+            }
+            targetElement.scrollTop = targetElement.scrollHeight;
+        };
+        
+        const handleChatSubmit = async (question, chatHistory, targetElement, submitBtn, documentContext = null) => {
+            if (!question) return;
+
+            chatHistory.push({ role: 'user', content: question });
+            renderChat(chatHistory, targetElement);
+
+            const typingIndicator = { role: 'ai', content: `<div class="typing-indicator"><span class="typing-cursor"></span><span class="typing-cursor"></span><span class="typing-cursor"></span></div>` };
+            chatHistory.push(typingIndicator);
+            renderChat(chatHistory, targetElement);
+
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/ask`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        question: question,
+                        document_context: documentContext
+                    })
+                });
+                const data = await response.json();
+                chatHistory.pop(); // Remove typing indicator
+                if (response.ok && data.answer) {
+                    chatHistory.push({ role: 'ai', content: data.answer });
+                } else {
+                    showToast(`Error: ${data.detail || data.answer || 'Failed to get response'}`, 'error');
+                    chatHistory.push({ role: 'ai', content: "Sorry, I encountered an error. Please try again." });
+                }
+            } catch (error) {
+                console.error('Error fetching chat response:', error);
+                showToast('Network error or server is down.', 'error');
+                chatHistory.pop(); // Remove typing indicator
+                chatHistory.push({ role: 'ai', content: "Sorry, I couldn't connect to the server." });
+            } finally {
+                renderChat(chatHistory, targetElement);
+                submitBtn.disabled = false;
+            }
+        };
+
+        elements.themeToggle.addEventListener('click', () => applyTheme(elements.html.classList.contains('light') ? 'dark' : 'light'));
+        elements.languageSwitcher.addEventListener('change', (e) => { localStorage.setItem('language', e.target.value); updateLanguage(e.target.value); });
+        
+        elements.tabs.forEach(button => {
+            button.addEventListener('click', () => {
+                elements.tabs.forEach(btn => btn.classList.remove('tab-active'));
+                document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+                button.classList.add('tab-active');
+                document.getElementById(`${button.dataset.tab}-tab`).classList.remove('hidden');
+                if (button.dataset.tab === 'analytics' && !appState.analyticsInitialized) {
+                    initializeAnalytics();
+                }
+            });
+        });
+
+        // --- General "Ask" Tab Logic ---
+        elements.submitQuestionBtn.addEventListener('click', () => {
+            const question = elements.userQuestionInput.value.trim();
+            handleChatSubmit(question, appState.generalChatHistory, elements.chatHistory, elements.submitQuestionBtn);
+            elements.userQuestionInput.value = '';
+        });
+        elements.userQuestionInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') elements.submitQuestionBtn.click(); });
+        elements.clearChatBtn.addEventListener('click', () => { appState.generalChatHistory = []; renderChat(appState.generalChatHistory, elements.chatHistory, 'chat_start'); showToast('Chat history cleared!', 'success'); });
+
+        // --- Document AI Tab Logic ---
+        const renderUploadedFile = () => {
+            if (!appState.uploadedPolicyFile) {
+                elements.uploadedFilesDiv.innerHTML = `<div class="text-center py-4 themed-text-secondary" data-lang-key="doc_no_docs">${translations[localStorage.getItem('language') || 'en'].doc_no_docs}</div>`;
+                elements.processDocsBtn.disabled = true;
+            } else {
+                elements.uploadedFilesDiv.innerHTML = `<div class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-sm"><p class="themed-text font-medium truncate">${appState.uploadedPolicyFile.name}</p><button class="remove-policy-file-btn text-red-500"><i class="fas fa-times-circle"></i></button></div>`;
+                elements.processDocsBtn.disabled = false;
+            }
+        };
+        
+        const handleFileSelection = (file) => {
+            if (file && file.type === 'application/pdf') {
+                appState.uploadedPolicyFile = file;
+                renderUploadedFile();
+            } else if (file) {
+                showToast("Please select a PDF file.", "error");
+            }
+        };
+
+        elements.dropzone.addEventListener('click', () => elements.policyUploadInput.click());
+        elements.dropzone.addEventListener('dragover', (e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-500'); });
+        elements.dropzone.addEventListener('dragleave', (e) => e.currentTarget.classList.remove('border-blue-500'));
+        elements.dropzone.addEventListener('drop', (e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-500'); handleFileSelection(e.dataTransfer.files[0]); });
+        elements.policyUploadInput.addEventListener('change', (e) => { handleFileSelection(e.target.files[0]); e.target.value = ''; });
+        
+        elements.uploadedFilesDiv.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-policy-file-btn')) {
+                appState.uploadedPolicyFile = null;
+                appState.policyDocumentText = null;
+                renderUploadedFile();
+                elements.processingResult.classList.add('hidden');
+                elements.docUserInput.disabled = true;
+                elements.docSubmitBtn.disabled = true;
+            }
+        });
+
+        elements.processDocsBtn.addEventListener('click', async () => {
+            if (!appState.uploadedPolicyFile) { showToast('Please upload a document first.', 'error'); return; }
+            elements.docProcessSpinner.classList.remove('hidden');
+            elements.processDocsBtn.disabled = true;
+            elements.processDocsBtn.querySelector('span').textContent = 'Processing...';
+            const formData = new FormData();
+            formData.append('file', appState.uploadedPolicyFile);
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload-doc`, { method: 'POST', body: formData });
+                const data = await response.json();
+                if (response.ok && data.status === 'success') {
+                    appState.policyDocumentText = data.full_text;
+                    elements.resultPreview.innerHTML = `<strong>Summary:</strong><br>${data.summary}`;
+                    elements.processingResult.classList.remove('hidden');
+                    elements.docUserInput.disabled = false;
+                    elements.docSubmitBtn.disabled = false;
+                    showToast('Document processed successfully!', 'success');
+                } else {
+                    showToast(`Error processing document: ${data.detail || 'Unknown error'}`, 'error');
+                    elements.processingResult.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error uploading document:', error);
+                showToast('Network error or server is down.', 'error');
+                elements.processingResult.classList.add('hidden');
+            } finally {
+                elements.docProcessSpinner.classList.add('hidden');
+                elements.processDocsBtn.disabled = false;
+                const lang = localStorage.getItem('language') || 'en';
+                elements.processDocsBtn.querySelector('span').textContent = translations[lang].button_process_docs;
+            }
+        });
+
+        elements.clearDocsBtn.addEventListener('click', () => {
+            appState.uploadedPolicyFile = null;
+            appState.policyDocumentText = null;
+            appState.docChatHistory = [];
+            renderUploadedFile();
+            renderChat(appState.docChatHistory, elements.docChatHistory, 'doc_chat_start');
+            elements.processingResult.classList.add('hidden');
+            elements.docUserInput.disabled = true;
+            elements.docSubmitBtn.disabled = true;
+            showToast('Document AI data cleared!', 'success');
+        });
+
+        elements.docSubmitBtn.addEventListener('click', () => {
+            const question = elements.docUserInput.value.trim();
+            handleChatSubmit(question, appState.docChatHistory, elements.docChatHistory, elements.docSubmitBtn, appState.policyDocumentText);
+            elements.docUserInput.value = '';
+        });
+        elements.docUserInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') elements.docSubmitBtn.click(); });
+
+
+        // --- Claim Tab ---
+        const renderClaimFile = () => {
+            if (!appState.claimFile) {
+                elements.claimFilesList.innerHTML = `<div class="text-center py-2 themed-text-secondary">No file uploaded yet</div>`;
+            } else {
+                elements.claimFilesList.innerHTML = `<div class="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-sm"><p class="themed-text font-medium truncate">${appState.claimFile.name}</p><button class="remove-file-btn text-red-500"><i class="fas fa-times-circle"></i></button></div>`;
+            }
+        };
+
+        const handleClaimFileSelection = (file) => { if(file) { appState.claimFile = file; renderClaimFile(); } };
+        elements.claimDropzone.addEventListener('click', () => elements.claimUploadInput.click());
+        elements.claimDropzone.addEventListener('dragover', (e) => { e.preventDefault(); e.currentTarget.classList.add('border-blue-500'); });
+        elements.claimDropzone.addEventListener('dragleave', (e) => e.currentTarget.classList.remove('border-blue-500'));
+        elements.claimDropzone.addEventListener('drop', (e) => { e.preventDefault(); e.currentTarget.classList.remove('border-blue-500'); handleClaimFileSelection(e.dataTransfer.files[0]); });
+        elements.claimUploadInput.addEventListener('change', (e) => { handleClaimFileSelection(e.target.files[0]); e.target.value = ''; });
+        elements.claimFilesList.addEventListener('click', (e) => { if (e.target.closest('.remove-file-btn')) { appState.claimFile = null; renderClaimFile(); } });
+        
+        elements.checkClaimBtn.addEventListener('click', async () => {
+            const claimType = elements.claimType.value;
+            if (!claimType) { showToast('Please select a claim type.', 'error'); return; }
+            if (!appState.policyDocumentText) { showToast('Please upload and process a policy document first in the "Document AI" tab.', 'error'); return; }
+            
+            elements.claimSpinner.classList.remove('hidden');
+            elements.checkClaimBtn.disabled = true;
+            elements.checkClaimBtn.querySelector('span').textContent = 'Checking...';
+            
+            const formData = new FormData();
+            formData.append('claim_type', claimType);
+            formData.append('document_context', appState.policyDocumentText);
+            if (appState.claimFile) { formData.append('bill', appState.claimFile); }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/check-claim`, { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    elements.claimResultContainer.classList.remove('hidden');
+                    const decision = data.decision || "Analysis Complete";
+                    const isEligible = decision.toLowerCase().includes('eligible');
+                    elements.claimStatus.className = `p-4 rounded-lg text-center font-bold text-lg mb-4 ${isEligible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                    elements.claimStatus.textContent = decision;
+                    elements.claimReason.textContent = data.reason || "";
+                    elements.validatorList.innerHTML = (data.required_documents || []).map(doc =>
+                        `<li class="flex items-center"><i class="fas fa-file-alt mr-2 text-gray-400"></i>${doc}</li>`
+                    ).join('');
+                    if (!data.required_documents || data.required_documents.length === 0) {
+                        elements.validatorList.innerHTML = `<li class="themed-text-secondary">No specific documents were flagged as missing based on the analysis.</li>`;
+                    }
+                    showToast('Claim analysis complete!', 'success');
+                } else {
+                    showToast(`Error checking claim: ${data.detail || 'Unknown error'}`, 'error');
+                    elements.claimResultContainer.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking claim:', error);
+                showToast('Network error or server is down.', 'error');
+                elements.claimResultContainer.classList.add('hidden');
+            } finally {
+                elements.claimSpinner.classList.add('hidden');
+                elements.checkClaimBtn.disabled = false;
+                const lang = localStorage.getItem('language') || 'en';
+                elements.checkClaimBtn.querySelector('span').textContent = translations[lang].button_check_claim;
+            }
+        });
+
+        // --- Recommendations Tab ---
+        elements.getRecommendationsBtn.addEventListener('click', async () => {
+            const age = elements.userAge.value;
+            const gender = elements.userGender.value;
+            const healthConditions = elements.healthConditions.value.trim();
+            const coverage = elements.desiredCoverage.value.trim();
+            const budget = elements.userBudget.value;
+            if (!age || !gender || !coverage || !budget) { showToast('Please fill in all required fields: Age, Gender, Desired Coverage, and Budget.', 'error'); return; }
+            
+            elements.recommendSpinner.classList.remove('hidden');
+            elements.getRecommendationsBtn.disabled = true;
+            elements.getRecommendationsBtn.querySelector('span').textContent = 'Finding...';
+            
+            const formData = new FormData();
+            formData.append('user_age', age);
+            formData.append('user_gender', gender);
+            formData.append('health_conditions', healthConditions || 'None');
+            formData.append('coverage', coverage);
+            formData.append('budget', budget);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/recommend-policy`, { method: 'POST', body: formData });
+                const data = await response.json();
+                elements.recommendationsContainer.innerHTML = ''; // Clear previous results
+                if (response.ok && data.recommendations && data.recommendations.length > 0) {
+                    elements.recommendationsContainer.classList.remove('hidden');
+                    data.recommendations.forEach(rec => {
+                        const card = document.createElement('div');
+                        card.className = 'card themed-text rounded-lg shadow-md p-6';
+                        card.innerHTML = `
+                            <h4 class="text-lg font-semibold text-blue-600 dark:text-blue-400">${rec.policy_name}</h4>
+                            <p class="themed-text-secondary mt-2">${rec.reasoning}</p>
+                            <div class="mt-4">
+                                <p class="text-sm"><strong>Key Features:</strong> ${rec.key_features.join(', ')}</p>
+                                <p class="text-sm"><strong>Estimated Premium:</strong> ${rec.estimated_premium}</p>
+                            </div>
+                        `;
+                        elements.recommendationsContainer.appendChild(card);
+                    });
+                    showToast('Recommendations loaded!', 'success');
+                } else {
+                    elements.recommendationsContainer.classList.remove('hidden');
+                    const lang = localStorage.getItem('language') || 'en';
+                    elements.recommendationsContainer.innerHTML = `<p class="text-center themed-text-secondary col-span-full">${translations[lang].recommend_policy_no_results}</p>`;
+                    if(!response.ok) showToast(`Error: ${data.detail || 'Could not fetch recommendations.'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching recommendations:', error);
+                showToast('Network error or server is down.', 'error');
+                elements.recommendationsContainer.classList.add('hidden');
+            } finally {
+                elements.recommendSpinner.classList.add('hidden');
+                elements.getRecommendationsBtn.disabled = false;
+                const lang = localStorage.getItem('language') || 'en';
+                elements.getRecommendationsBtn.querySelector('span').textContent = translations[lang].button_get_recommendations;
+            }
+        });
+        
+        // --- Hospitals Tab ---
+        elements.findHospitalsBtn.addEventListener('click', async () => {
+            const location = elements.hospitalLocationInput.value.trim();
+            if (!location) { showToast('Please enter a city or pin code.', 'error'); return; }
+            
+            elements.hospitalSpinner.classList.remove('hidden');
+            elements.findHospitalsBtn.disabled = true;
+            elements.findHospitalsBtn.querySelector('span').textContent = 'Searching...';
+            elements.hospitalList.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/find-hospitals?location=${encodeURIComponent(location)}`);
+                const data = await response.json();
+                
+                if (response.ok && data.hospitals && data.hospitals.length > 0) {
+                    data.hospitals.forEach(hospital => {
+                        elements.hospitalList.innerHTML += `
+                            <div class="card themed-text rounded-lg shadow-md p-4">
+                                <h4 class="text-lg font-semibold">${hospital.name}</h4>
+                                <p class="themed-text-secondary">${hospital.address}</p>
+                                <p class="themed-text-secondary mt-1"><strong>Specialties:</strong> ${hospital.specialties.join(', ')}</p>
+                            </div>`;
+                    });
+                    showToast('Hospitals found!', 'success');
+                } else {
+                    const lang = localStorage.getItem('language') || 'en';
+                    elements.hospitalList.innerHTML = `<p class="text-center themed-text-secondary">${translations[lang].hospital_no_results.replace('{location}', location)}</p>`;
+                    if(!response.ok) showToast(`Error: ${data.detail || 'Could not find hospitals.'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error fetching hospitals:', error);
+                showToast('Network error or server is down.', 'error');
+                elements.hospitalList.innerHTML = '';
+            } finally {
+                elements.hospitalSpinner.classList.add('hidden');
+                elements.findHospitalsBtn.disabled = false;
+                const lang = localStorage.getItem('language') || 'en';
+                elements.findHospitalsBtn.querySelector('span').textContent = translations[lang].button_find;
+            }
+        });
+
+       
+        
+        // --- Jargon Modal ---
+        const closeModal = (modal) => modal.classList.add('hidden');
+        const openJargonModal = (e) => {
+            if (e.target.classList.contains('jargon')) {
+                const term = e.target.dataset.term;
+                const lang = localStorage.getItem('language') || 'en';
+                const definition = translations[lang].jargon[term];
+                if (definition) {
+                    elements.jargonTerm.textContent = e.target.textContent;
+                    elements.jargonDefinition.textContent = definition;
+                    elements.jargonModal.classList.remove('hidden');
+                }
+            }
+        };
+        elements.chatHistory.addEventListener('click', openJargonModal);
+        elements.docChatHistory.addEventListener('click', openJargonModal);
+
+        elements.jargonModalClose.addEventListener('click', () => closeModal(elements.jargonModal));
+        elements.jargonModal.addEventListener('click', (e) => e.target === elements.jargonModal && closeModal(elements.jargonModal));
+
+        // --- Initial Setup ---
+        applyTheme(localStorage.getItem('theme') || 'light');
+        updateLanguage(localStorage.getItem('language') || 'en');
+        renderChat(appState.generalChatHistory, elements.chatHistory, 'chat_start');
+        renderChat(appState.docChatHistory, elements.docChatHistory, 'doc_chat_start');
+        renderUploadedFile();
+        renderClaimFile();
+    });
+    </script>
+</body>
+</html>
